@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROBÔ SARCÁSTICO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050a05;
+      --green: #00ff41;
+      --green-dim: #00c030;
+      --green-faint: #003010;
+      --red: #ff2a2a;
+      --text: #b0ffb0;
+      --border: #00ff4133;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,255,65,0.015) 2px,
+        rgba(0,255,65,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .glitch-wrapper {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 3rem);
+      color: var(--green);
+      text-shadow: 0 0 10px var(--green), 0 0 40px var(--green-dim);
+      letter-spacing: 0.15em;
+      animation: flicker 5s infinite;
+    }
+
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--green-dim);
+      letter-spacing: 0.3em;
+      margin-top: 8px;
+    }
+
+    @keyframes flicker {
+      0%, 95%, 100% { opacity: 1; }
+      96% { opacity: 0.4; }
+      97% { opacity: 1; }
+      98% { opacity: 0.2; }
+      99% { opacity: 1; }
+    }
+
+    .terminal {
+      width: 100%;
+      max-width: 780px;
+      border: 1px solid var(--green-dim);
+      border-radius: 4px;
+      box-shadow: 0 0 30px rgba(0,255,65,0.1), inset 0 0 60px rgba(0,255,65,0.02);
+      overflow: hidden;
+    }
+
+    .terminal-bar {
+      background: var(--green-faint);
+      border-bottom: 1px solid var(--green-dim);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.7rem;
+      color: var(--green-dim);
+      letter-spacing: 0.2em;
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green-dim); opacity: 0.5; }
+
+    .chat-area {
+      padding: 20px;
+      min-height: 340px;
+      max-height: 440px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--green-dim) transparent;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      opacity: 0.5;
+    }
+
+    .message.user .label { color: var(--text); }
+    .message.bot .label  { color: var(--green); }
+
+    .message .bubble {
+      padding: 12px 16px;
+      border-radius: 2px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.user .bubble {
+      background: rgba(176,255,176,0.05);
+      border-left: 2px solid rgba(176,255,176,0.3);
+      color: var(--text);
+    }
+
+    .message.bot .bubble {
+      background: rgba(0,255,65,0.05);
+      border-left: 2px solid var(--green-dim);
+      color: var(--green);
+    }
+
+    .message.error .bubble {
+      border-left-color: var(--red);
+      color: var(--red);
+    }
+
+    .typing {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 12px 16px;
+    }
+
+    .typing span {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+    .input-area {
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .prompt-sign {
+      color: var(--green);
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      resize: none;
+      padding: 18px 0;
+      line-height: 1.5;
+      max-height: 120px;
+    }
+
+    textarea::placeholder { color: rgba(176,255,176,0.25); }
+
+    button {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 10px 18px;
+      background: transparent;
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      background: rgba(0,255,65,0.08);
+      box-shadow: 0 0 12px rgba(0,255,65,0.2);
+    }
+
+    button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .status-bar {
+      margin-top: 12px;
+      font-size: 0.65rem;
+      color: var(--green-dim);
+      letter-spacing: 0.2em;
+      opacity: 0.6;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glitch-wrapper">
+    <h1>ROBÔ SARCÁSTICO</h1>
+    <p class="subtitle">POWERED BY GEMINI // RENDER CLOUD</p>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <span style="margin-left:8px">POST → https://ia-ae.onrender.com/api/chat</span>
+    </div>
+
+    <div class="chat-area" id="chat">
+      <div class="message bot">
+        <span class="label">// SISTEMA</span>
+        <div class="bubble">Olá, humano medíocre. Faça sua pergunta — responderei com o mínimo de paciência que você merece.</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <span class="prompt-sign">›</span>
+      <textarea id="input" rows="1" placeholder="Digite sua pergunta..." maxlength="1000"></textarea>
+      <button id="btn" onclick="enviar()">ENVIAR</button>
+    </div>
+  </div>
+
+  <p class="status-bar" id="status">AGUARDANDO INPUT...</p>
+
+  <script>
+    const chat   = document.getElementById('chat');
+    const input  = document.getElementById('input');
+    const btn    = document.getElementById('btn');
+    const status = document.getElementById('status');
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        enviar();
+      }
+    });
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = input.scrollHeight + 'px';
+    });
+
+    function addMessage(who, text, isError = false) {
+      const div = document.createElement('div');
+      div.className = 'message ' + who + (isError ? ' error' : '');
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = who === 'user' ? '// VOCÊ' : '// ROBÔ';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+
+      div.appendChild(label);
+      div.appendChild(bubble);
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    function addTyping() {
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      div.id = 'typing';
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = '// ROBÔ';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'typing';
+      bubble.innerHTML = '<span></span><span></span><span></span>';
+
+      div.appendChild(label);
+      div.appendChild(bubble);
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function removeTyping() {
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+
+    async function enviar() {
+      const pergunta = input.value.trim();
+      if (!pergunta) return;
+
+      addMessage('user', pergunta);
+      input.value = '';
+      input.style.height = 'auto';
+      btn.disabled = true;
+      status.textContent = 'PROCESSANDO...';
+      addTyping();
+
+      try {
+        const res = await fetch('https://ia-ae.onrender.com/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pergunta })
+        });
+
+        const data = await res.json();
+        removeTyping();
+
+        if (data.sucesso) {
+          addMessage('bot', data.resposta);
+          status.textContent = 'RESPOSTA RECEBIDA // STATUS 200';
+        } else {
+          addMessage('bot', data.erro || 'Erro desconhecido.', true);
+          status.textContent = 'ERRO DO SERVIDOR // STATUS ' + res.status;
+        }
+      } catch (err) {
+        removeTyping();
+        addMessage('bot', 'Não consegui conectar ao servidor. Ele está rodando? (node server.js)', true);
+        status.textContent = 'ERRO DE CONEXÃO // VERIFIQUE O SERVIDOR';
+      }
+
+      btn.disabled = false;
+      input.focus();
+    }
+  </script>
+</body>
+</html>
