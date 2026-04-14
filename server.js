@@ -28,7 +28,7 @@ const Mensagem = mongoose.model('Mensagem', MensagemSchema);
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// 6. ROTA (Endpoint) DA API ← REFATORADA COM MEMÓRIA
+// 6. ROTA (Endpoint) DA API
 app.post('/api/chat', async (req, res) => {
     try {
         const { pergunta } = req.body;
@@ -36,33 +36,27 @@ app.post('/api/chat', async (req, res) => {
 
         console.log(`📩 Nova pergunta recebida: "${pergunta}"`);
 
-        // 1. Salva a pergunta do usuário no Banco de Dados
         await Mensagem.create({ role: "user", parts: [{ text: pergunta }] });
 
-        // 2. Busca o histórico (últimas 20 mensagens), sem _id e dataHora
         const historico = await Mensagem.find()
                                         .select('role parts -_id')
                                         .sort({ dataHora: 1 })
                                         .limit(20);
 
-        // 3. Inicia o chat com o histórico e a personalidade do robô
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            systemInstruction: "Você é um robô sarcástico." // ← Personalidade preservada!
+            model: "gemini-2.0-flash-lite", // ← MODELO TROCADO
+            systemInstruction: "Você é um robô sarcástico."
         });
 
         const chat = model.startChat({
-            history: historico // O Gemini lê isso e "lembra" do que conversaram
+            history: historico
         });
 
-        // 4. Manda a nova pergunta para a IA
         const result = await chat.sendMessage(pergunta);
         const respostaDaIA = result.response.text();
 
-        // 5. Salva a resposta da IA no Banco para uso futuro
         await Mensagem.create({ role: "model", parts: [{ text: respostaDaIA }] });
 
-        // 6. Devolve a resposta para o Front-end
         return res.status(200).json({ sucesso: true, resposta: respostaDaIA });
 
     } catch (erro) {
