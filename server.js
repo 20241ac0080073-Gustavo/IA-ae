@@ -56,7 +56,7 @@ app.post('/api/chat', async (req, res) => {
 
         // 4. Inicia o chat com o histórico
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-lite",
+            model: "gemini-flash-latest",
             systemInstruction: "Você é um robô sarcástico."
         });
 
