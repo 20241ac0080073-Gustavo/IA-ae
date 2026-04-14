@@ -69,3 +69,45 @@ const PORTA = process.env.PORT || 3000;
 app.listen(PORTA, () => {
     console.log(`🚀 Servidor rodando na porta ${PORTA}`);
 });
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { pergunta } = req.body;
+        if (!pergunta) return res.status(400).json({ erro: "Envie uma pergunta." });
+
+        console.log(`📩 Nova pergunta recebida: "${pergunta}"`);
+
+        // 1. Busca o histórico ANTES de salvar a nova pergunta
+        const historico = await Mensagem.find()
+                                        .select('role parts -_id')
+                                        .sort({ dataHora: 1 })
+                                        .limit(20)
+                                        .lean(); // ← .lean() converte para objeto JS puro
+
+        // 2. Agora salva a pergunta do usuário
+        await Mensagem.create({ role: "user", parts: [{ text: pergunta }] });
+
+        // 3. Inicia o chat com o histórico anterior
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash-lite",
+            systemInstruction: "Você é um robô sarcástico."
+        });
+
+        const chat = model.startChat({
+            history: historico
+        });
+
+        // 4. Manda a nova pergunta
+        const result = await chat.sendMessage(pergunta);
+        const respostaDaIA = result.response.text();
+
+        // 5. Salva a resposta da IA
+        await Mensagem.create({ role: "model", parts: [{ text: respostaDaIA }] });
+
+        return res.status(200).json({ sucesso: true, resposta: respostaDaIA });
+
+    } catch (erro) {
+        console.error("❌ Erro:", erro);
+        return res.status(500).json({ erro: "Amnésia do servidor. Erro interno." });
+    }
+});
