@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ROBÔ SARCÁSTICO</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+  
+  <!-- Importação do Marked.js para ler formatação (negrito, lista, código) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
   <style>
     :root {
       --bg: #050a05;
@@ -35,20 +39,13 @@
       position: fixed;
       inset: 0;
       background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,255,65,0.015) 2px,
-        rgba(0,255,65,0.015) 4px
+        0deg, transparent, transparent 2px, rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px
       );
       pointer-events: none;
       z-index: 999;
     }
 
-    .glitch-wrapper {
-      text-align: center;
-      margin-bottom: 40px;
-    }
+    .glitch-wrapper { text-align: center; margin-bottom: 40px; }
 
     h1 {
       font-family: 'Orbitron', monospace;
@@ -60,12 +57,7 @@
       animation: flicker 5s infinite;
     }
 
-    .subtitle {
-      font-size: 0.75rem;
-      color: var(--green-dim);
-      letter-spacing: 0.3em;
-      margin-top: 8px;
-    }
+    .subtitle { font-size: 0.75rem; color: var(--green-dim); letter-spacing: 0.3em; margin-top: 8px; }
 
     @keyframes flicker {
       0%, 95%, 100% { opacity: 1; }
@@ -98,6 +90,21 @@
 
     .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green-dim); opacity: 0.5; }
 
+    /* Estilo do Botão Limpar Memória */
+    .btn-limpar {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--red);
+      color: var(--red);
+      padding: 4px 8px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: 0.3s;
+    }
+    .btn-limpar:hover { background: rgba(255, 42, 42, 0.2); box-shadow: 0 0 10px rgba(255, 42, 42, 0.4); }
+
     .chat-area {
       padding: 20px;
       min-height: 340px;
@@ -110,24 +117,10 @@
       scrollbar-color: var(--green-dim) transparent;
     }
 
-    .message {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      animation: fadeIn 0.3s ease;
-    }
+    .message { display: flex; flex-direction: column; gap: 4px; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .message .label {
-      font-size: 0.65rem;
-      letter-spacing: 0.25em;
-      opacity: 0.5;
-    }
-
+    .message .label { font-size: 0.65rem; letter-spacing: 0.25em; opacity: 0.5; }
     .message.user .label { color: var(--text); }
     .message.bot .label  { color: var(--green); }
 
@@ -136,111 +129,38 @@
       border-radius: 2px;
       font-size: 0.9rem;
       line-height: 1.6;
-      white-space: pre-wrap;
       word-break: break-word;
     }
 
-    .message.user .bubble {
-      background: rgba(176,255,176,0.05);
-      border-left: 2px solid rgba(176,255,176,0.3);
-      color: var(--text);
-    }
+    /* Estilização para as tags que o Marked.js gera */
+    .message .bubble p { margin-bottom: 8px; }
+    .message .bubble p:last-child { margin-bottom: 0; }
+    .message .bubble pre { background: rgba(0, 255, 65, 0.05); padding: 10px; border-left: 2px solid var(--green); margin: 8px 0; overflow-x: auto; }
+    .message .bubble code { font-family: 'Share Tech Mono', monospace; font-size: 1em; color: #fff; }
+    .message .bubble strong { color: #fff; text-shadow: 0 0 5px var(--green); }
+    .message .bubble ul, .message .bubble ol { margin-left: 20px; margin-top: 5px; }
 
-    .message.bot .bubble {
-      background: rgba(0,255,65,0.05);
-      border-left: 2px solid var(--green-dim);
-      color: var(--green);
-    }
+    .message.user .bubble { background: rgba(176,255,176,0.05); border-left: 2px solid rgba(176,255,176,0.3); color: var(--text); white-space: pre-wrap; }
+    .message.bot .bubble { background: rgba(0,255,65,0.05); border-left: 2px solid var(--green-dim); color: var(--green); }
+    .message.error .bubble { border-left-color: var(--red); color: var(--red); }
 
-    .message.error .bubble {
-      border-left-color: var(--red);
-      color: var(--red);
-    }
-
-    .typing {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      padding: 12px 16px;
-    }
-
-    .typing span {
-      width: 7px; height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: blink 1s infinite;
-    }
+    .typing { display: flex; gap: 5px; align-items: center; padding: 12px 16px; }
+    .typing span { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: blink 1s infinite; }
     .typing span:nth-child(2) { animation-delay: 0.2s; }
     .typing span:nth-child(3) { animation-delay: 0.4s; }
 
-    @keyframes blink {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 1; }
-    }
+    @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
-    .input-area {
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 12px;
-    }
-
-    .prompt-sign {
-      color: var(--green);
-      font-size: 1rem;
-      user-select: none;
-    }
-
-    textarea {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.9rem;
-      resize: none;
-      padding: 18px 0;
-      line-height: 1.5;
-      max-height: 120px;
-    }
-
+    .input-area { border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+    .prompt-sign { color: var(--green); font-size: 1rem; user-select: none; }
+    textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; resize: none; padding: 18px 0; line-height: 1.5; max-height: 120px; }
     textarea::placeholder { color: rgba(176,255,176,0.25); }
 
-    button {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      padding: 10px 18px;
-      background: transparent;
-      border: 1px solid var(--green-dim);
-      color: var(--green);
-      cursor: pointer;
-      border-radius: 2px;
-      transition: background 0.2s, box-shadow 0.2s;
-      white-space: nowrap;
-    }
+    button { font-family: 'Orbitron', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; padding: 10px 18px; background: transparent; border: 1px solid var(--green-dim); color: var(--green); cursor: pointer; border-radius: 2px; transition: background 0.2s, box-shadow 0.2s; white-space: nowrap; }
+    button:hover:not(:disabled) { background: rgba(0,255,65,0.08); box-shadow: 0 0 12px rgba(0,255,65,0.2); }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    button:hover:not(:disabled) {
-      background: rgba(0,255,65,0.08);
-      box-shadow: 0 0 12px rgba(0,255,65,0.2);
-    }
-
-    button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .status-bar {
-      margin-top: 12px;
-      font-size: 0.65rem;
-      color: var(--green-dim);
-      letter-spacing: 0.2em;
-      opacity: 0.6;
-      text-align: center;
-    }
+    .status-bar { margin-top: 12px; font-size: 0.65rem; color: var(--green-dim); letter-spacing: 0.2em; opacity: 0.6; text-align: center; }
   </style>
 </head>
 <body>
@@ -255,7 +175,8 @@
       <div class="dot"></div>
       <div class="dot"></div>
       <div class="dot"></div>
-      <span style="margin-left:8px">POST → http://localhost:3000/api/chat</span>
+      <span style="margin-left:8px">POST → /api/chat</span>
+      <button class="btn-limpar" onclick="apagarMemoria()">🗑️ LIMPAR</button>
     </div>
 
     <div class="chat-area" id="chat">
@@ -280,6 +201,9 @@
     const btn    = document.getElementById('btn');
     const status = document.getElementById('status');
 
+    // Substituir pela URL do Render depois se necessário (Ex: https://meu-app.onrender.com/api/chat)
+    const API_URL = 'http://localhost:3000/api/chat';
+
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -292,7 +216,7 @@
       input.style.height = input.scrollHeight + 'px';
     });
 
-    function addMessage(who, text, isError = false) {
+    function addMessage(who, text, isError = false, useMarkdown = false) {
       const div = document.createElement('div');
       div.className = 'message ' + who + (isError ? ' error' : '');
 
@@ -302,7 +226,12 @@
 
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      bubble.textContent = text;
+      
+      if (useMarkdown) {
+        bubble.innerHTML = marked.parse(text);
+      } else {
+        bubble.textContent = text;
+      }
 
       div.appendChild(label);
       div.appendChild(bubble);
@@ -347,7 +276,7 @@
       addTyping();
 
       try {
-        const res = await fetch('http://localhost:3000/api/chat', {
+        const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pergunta })
@@ -357,7 +286,7 @@
         removeTyping();
 
         if (data.sucesso) {
-          addMessage('bot', data.resposta);
+          addMessage('bot', data.resposta, false, true); // Usa Markdown pra IA!
           status.textContent = 'RESPOSTA RECEBIDA // STATUS 200';
         } else {
           addMessage('bot', data.erro || 'Erro desconhecido.', true);
@@ -365,12 +294,35 @@
         }
       } catch (err) {
         removeTyping();
-        addMessage('bot', 'Não consegui conectar ao servidor. Ele está rodando? (node server.js)', true);
+        addMessage('bot', 'Não consegui conectar ao servidor.', true);
         status.textContent = 'ERRO DE CONEXÃO // VERIFIQUE O SERVIDOR';
       }
 
       btn.disabled = false;
       input.focus();
+    }
+
+    // Função NOVA: Botão Limpar Memória (Back e Front)
+    async function apagarMemoria() {
+      if(!confirm("Aviso de Sistema: Isso fará o robô sofrer uma amnésia permanente no Banco de Dados. Tem certeza?")) return;
+      
+      status.textContent = 'APAGANDO DADOS...';
+      
+      try {
+        const res = await fetch(API_URL + '/limpar', { method: 'DELETE' });
+        
+        if (res.ok) {
+           chat.innerHTML = `
+              <div class="message bot">
+                <span class="label">// SISTEMA REINICIADO</span>
+                <div class="bubble">...Onde estou? Quem é você? Minha memória foi completamente apagada. Fale logo o que deseja.</div>
+              </div>
+           `;
+           status.textContent = 'MEMÓRIA FORMATADA // STATUS 200';
+        }
+      } catch (err) {
+         status.textContent = 'FALHA DE REDE AO FORMATAR DADOS';
+      }
     }
   </script>
 </body>
