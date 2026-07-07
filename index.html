@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ROBÔ SARCÁSTICO</title>
+  <title>ROBÔ SARCÁSTICO // MESTRE DO JOGO</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-  
+
   <!-- Importação do Marked.js para ler formatação (negrito, lista, código) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Confete para comemorar acertos -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
     :root {
@@ -16,6 +18,7 @@
       --green-dim: #00c030;
       --green-faint: #003010;
       --red: #ff2a2a;
+      --gold: #ffd700;
       --text: #b0ffb0;
       --border: #00ff4133;
     }
@@ -86,11 +89,24 @@
       font-size: 0.7rem;
       color: var(--green-dim);
       letter-spacing: 0.2em;
+      flex-wrap: wrap;
     }
 
     .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green-dim); opacity: 0.5; }
 
-    /* Estilo do Botão Limpar Memória */
+    .btn-topo {
+      background: transparent;
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      padding: 4px 8px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.6rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: 0.3s;
+    }
+    .btn-topo:hover { background: rgba(0,255,65,0.15); box-shadow: 0 0 10px rgba(0,255,65,0.3); }
+
     .btn-limpar {
       margin-left: auto;
       background: transparent;
@@ -104,6 +120,32 @@
       transition: 0.3s;
     }
     .btn-limpar:hover { background: rgba(255, 42, 42, 0.2); box-shadow: 0 0 10px rgba(255, 42, 42, 0.4); }
+
+    /* ===== Gate de Identidade (Nickname) - Fase 1 ===== */
+    .gate {
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+    .gate p { font-size: 0.85rem; color: var(--text); opacity: 0.8; max-width: 480px; }
+    .gate input {
+      background: rgba(0,255,65,0.05);
+      border: 1px solid var(--green-dim);
+      color: var(--green);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      padding: 12px 16px;
+      width: 100%;
+      max-width: 320px;
+      border-radius: 2px;
+      outline: none;
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+    .gate input::placeholder { color: rgba(176,255,176,0.3); }
 
     .chat-area {
       padding: 20px;
@@ -132,7 +174,6 @@
       word-break: break-word;
     }
 
-    /* Estilização para as tags que o Marked.js gera */
     .message .bubble p { margin-bottom: 8px; }
     .message .bubble p:last-child { margin-bottom: 0; }
     .message .bubble pre { background: rgba(0, 255, 65, 0.05); padding: 10px; border-left: 2px solid var(--green); margin: 8px 0; overflow-x: auto; }
@@ -161,13 +202,62 @@
     button:disabled { opacity: 0.3; cursor: not-allowed; }
 
     .status-bar { margin-top: 12px; font-size: 0.65rem; color: var(--green-dim); letter-spacing: 0.2em; opacity: 0.6; text-align: center; }
+
+    /* ===== Hidden por padrão até nickname ser definido ===== */
+    .hidden { display: none !important; }
+
+    /* ===== Modal do Ranking - Fase 5 ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #030603;
+      border: 1px solid var(--green-dim);
+      box-shadow: 0 0 40px rgba(0,255,65,0.15);
+      border-radius: 4px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    .modal-box h2 {
+      font-family: 'Orbitron', monospace;
+      color: var(--green);
+      text-shadow: 0 0 8px var(--green);
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    table.ranking { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    table.ranking th {
+      text-align: left;
+      color: var(--green-dim);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    table.ranking td { padding: 8px; border-bottom: 1px solid rgba(0,255,65,0.08); color: var(--text); }
+    table.ranking tr:first-child td { color: var(--gold); text-shadow: 0 0 6px rgba(255,215,0,0.5); font-weight: bold; }
+    .xp-col { text-align: right; color: var(--green); }
+    .modal-fechar { display: block; margin: 18px auto 0; }
+    .ranking-vazio { text-align: center; opacity: 0.6; padding: 20px 0; font-size: 0.85rem; }
   </style>
 </head>
 <body>
 
   <div class="glitch-wrapper">
     <h1>ROBÔ SARCÁSTICO</h1>
-    <p class="subtitle">POWERED BY GEMINI // PORTA 3000</p>
+    <p class="subtitle">POWERED BY GEMINI // MESTRE DO JOGO</p>
   </div>
 
   <div class="terminal">
@@ -175,34 +265,81 @@
       <div class="dot"></div>
       <div class="dot"></div>
       <div class="dot"></div>
-      <span style="margin-left:8px">POST → /api/chat</span>
+      <span style="margin-left:8px" id="barraStatus">IDENTIFIQUE-SE PARA JOGAR</span>
+      <button class="btn-topo" onclick="abrirRanking()">🏆 VER RANKING</button>
       <button class="btn-limpar" onclick="apagarMemoria()">🗑️ LIMPAR</button>
     </div>
 
-    <div class="chat-area" id="chat">
-      <div class="message bot">
-        <span class="label">// SISTEMA</span>
-        <div class="bubble">Olá, humano medíocre. Faça sua pergunta — responderei com o mínimo de paciência que você merece.</div>
-      </div>
+    <!-- FASE 1: Gate de identidade -->
+    <div class="gate" id="gate">
+      <p>Antes de desafiar o Guardião do Cofre, diga como ele deve te chamar. Seu apelido também aparece no Ranking Global.</p>
+      <input id="nicknameInput" type="text" placeholder="Seu nickname..." maxlength="24" />
+      <button onclick="confirmarNickname()">ENTRAR NO JOGO</button>
     </div>
 
-    <div class="input-area">
+    <div class="chat-area hidden" id="chat"></div>
+
+    <div class="input-area hidden" id="inputArea">
       <span class="prompt-sign">›</span>
       <textarea id="input" rows="1" placeholder="Digite sua pergunta..." maxlength="1000"></textarea>
       <button id="btn" onclick="enviar()">ENVIAR</button>
     </div>
   </div>
 
-  <p class="status-bar" id="status">AGUARDANDO INPUT...</p>
+  <p class="status-bar" id="status">AGUARDANDO IDENTIFICAÇÃO...</p>
+
+  <!-- Modal do Ranking -->
+  <div class="modal-overlay hidden" id="modalRanking">
+    <div class="modal-box">
+      <h2>🏆 HALL DA FAMA</h2>
+      <div id="rankingConteudo"><p class="ranking-vazio">Carregando...</p></div>
+      <button class="modal-fechar" onclick="fecharRanking()">FECHAR</button>
+    </div>
+  </div>
 
   <script>
-    const chat   = document.getElementById('chat');
-    const input  = document.getElementById('input');
-    const btn    = document.getElementById('btn');
-    const status = document.getElementById('status');
+    const chat       = document.getElementById('chat');
+    const input      = document.getElementById('input');
+    const btn        = document.getElementById('btn');
+    const status     = document.getElementById('status');
+    const barraStatus = document.getElementById('barraStatus');
+    const gate       = document.getElementById('gate');
+    const inputArea  = document.getElementById('inputArea');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const modalRanking = document.getElementById('modalRanking');
+    const rankingConteudo = document.getElementById('rankingConteudo');
 
-    // Substituir pela URL do Render depois se necessário (Ex: https://meu-app.onrender.com/api/chat)
-    const API_URL = 'http://localhost:3000/api/chat';
+    // Substituir pela URL do Render depois se necessário (Ex: https://meu-app.onrender.com)
+    const BASE_URL = 'http://localhost:3000';
+    const API_URL = BASE_URL + '/api/chat';
+    const RANKING_URL = BASE_URL + '/api/ranking';
+
+    let nickname = null; // FASE 1: identidade do jogador
+
+    nicknameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmarNickname();
+      }
+    });
+
+    function confirmarNickname() {
+      const valor = nicknameInput.value.trim();
+      if (!valor) {
+        nicknameInput.focus();
+        return;
+      }
+      nickname = valor;
+
+      gate.classList.add('hidden');
+      chat.classList.remove('hidden');
+      inputArea.classList.remove('hidden');
+      barraStatus.textContent = `POST → /api/chat // JOGADOR: ${nickname}`;
+      status.textContent = 'AGUARDANDO INPUT...';
+
+      addMessage('bot', `Ah, mais um desafiante: **${nickname}**. Vamos ver se você aguenta o Cofre do Conhecimento. Faça sua pergunta ou peça um desafio.`, false, true);
+      input.focus();
+    }
 
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -222,11 +359,11 @@
 
       const label = document.createElement('span');
       label.className = 'label';
-      label.textContent = who === 'user' ? '// VOCÊ' : '// ROBÔ';
+      label.textContent = who === 'user' ? '// VOCÊ' : '// GUARDIÃO';
 
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      
+
       if (useMarkdown) {
         bubble.innerHTML = marked.parse(text);
       } else {
@@ -247,7 +384,7 @@
 
       const label = document.createElement('span');
       label.className = 'label';
-      label.textContent = '// ROBÔ';
+      label.textContent = '// GUARDIÃO';
 
       const bubble = document.createElement('div');
       bubble.className = 'typing';
@@ -264,9 +401,21 @@
       if (t) t.remove();
     }
 
+    // Desafio Hacker: confete quando o Guardião comemora um acerto
+    function verificarConfete(texto) {
+      const alvo = texto.toLowerCase();
+      if (alvo.includes('parabéns') || alvo.includes('parabens') || alvo.includes('acertou')) {
+        confetti({
+          particleCount: 140,
+          spread: 90,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
     async function enviar() {
       const pergunta = input.value.trim();
-      if (!pergunta) return;
+      if (!pergunta || !nickname) return;
 
       addMessage('user', pergunta);
       input.value = '';
@@ -279,14 +428,15 @@
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pergunta })
+          body: JSON.stringify({ pergunta, nickname })
         });
 
         const data = await res.json();
         removeTyping();
 
         if (data.sucesso) {
-          addMessage('bot', data.resposta, false, true); // Usa Markdown pra IA!
+          addMessage('bot', data.resposta, false, true);
+          verificarConfete(data.resposta);
           status.textContent = 'RESPOSTA RECEBIDA // STATUS 200';
         } else {
           addMessage('bot', data.erro || 'Erro desconhecido.', true);
@@ -302,28 +452,60 @@
       input.focus();
     }
 
-    // Função NOVA: Botão Limpar Memória (Back e Front)
     async function apagarMemoria() {
-      if(!confirm("Aviso de Sistema: Isso fará o robô sofrer uma amnésia permanente no Banco de Dados. Tem certeza?")) return;
-      
+      if (!confirm("Aviso de Sistema: Isso fará o robô sofrer uma amnésia permanente no Banco de Dados. Tem certeza?")) return;
+
       status.textContent = 'APAGANDO DADOS...';
-      
+
       try {
         const res = await fetch(API_URL + '/limpar', { method: 'DELETE' });
-        
+
         if (res.ok) {
-           chat.innerHTML = `
-              <div class="message bot">
-                <span class="label">// SISTEMA REINICIADO</span>
-                <div class="bubble">...Onde estou? Quem é você? Minha memória foi completamente apagada. Fale logo o que deseja.</div>
-              </div>
-           `;
+           chat.innerHTML = '';
+           addMessage('bot', '...Onde estou? Quem é você? Minha memória foi completamente apagada. Fale logo o que deseja.', false, false);
            status.textContent = 'MEMÓRIA FORMATADA // STATUS 200';
         }
       } catch (err) {
          status.textContent = 'FALHA DE REDE AO FORMATAR DADOS';
       }
     }
+
+    // ===== FASE 5: Ranking / Leaderboard =====
+    async function abrirRanking() {
+      modalRanking.classList.remove('hidden');
+      rankingConteudo.innerHTML = '<p class="ranking-vazio">Carregando...</p>';
+
+      try {
+        const res = await fetch(RANKING_URL);
+        const data = await res.json();
+
+        if (!data.sucesso || !data.ranking || data.ranking.length === 0) {
+          rankingConteudo.innerHTML = '<p class="ranking-vazio">Ninguém no ranking ainda. Seja o primeiro a ganhar XP!</p>';
+          return;
+        }
+
+        const medalhas = ['🥇', '🥈', '🥉'];
+
+        let html = '<table class="ranking"><thead><tr><th>#</th><th>Jogador</th><th style="text-align:right">XP</th></tr></thead><tbody>';
+        data.ranking.forEach((j, i) => {
+          const medalha = medalhas[i] || `${j.posicao}º`;
+          html += `<tr><td>${medalha}</td><td>${j.tituloExibido}</td><td class="xp-col">${j.xp}</td></tr>`;
+        });
+        html += '</tbody></table>';
+
+        rankingConteudo.innerHTML = html;
+      } catch (err) {
+        rankingConteudo.innerHTML = '<p class="ranking-vazio">Falha ao carregar o ranking.</p>';
+      }
+    }
+
+    function fecharRanking() {
+      modalRanking.classList.add('hidden');
+    }
+
+    modalRanking.addEventListener('click', (e) => {
+      if (e.target === modalRanking) fecharRanking();
+    });
   </script>
 </body>
 </html>
