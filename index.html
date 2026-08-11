@@ -192,10 +192,45 @@
 
     @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
-    .input-area { border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+    .input-area { border-top: 1px solid var(--border); display: flex; flex-direction: column; padding: 10px 16px; gap: 8px; }
+    .input-row { display: flex; align-items: center; gap: 12px; }
     .prompt-sign { color: var(--green); font-size: 1rem; user-select: none; }
-    textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; resize: none; padding: 18px 0; line-height: 1.5; max-height: 120px; }
+    textarea { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; resize: none; padding: 10px 0; line-height: 1.5; max-height: 120px; }
     textarea::placeholder { color: rgba(176,255,176,0.25); }
+
+    .btn-anexo {
+      background: transparent;
+      border: 1px solid var(--green-dim);
+      color: var(--green-dim);
+      padding: 8px 10px;
+      cursor: pointer;
+      border-radius: 2px;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .btn-anexo:hover { color: var(--green); border-color: var(--green); background: rgba(0,255,65,0.08); }
+    .btn-anexo.ativo { color: var(--green); border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,65,0.3); }
+
+    .preview-imagem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 1px dashed var(--green-dim);
+      border-radius: 2px;
+      font-size: 0.7rem;
+      color: var(--text);
+    }
+    .preview-imagem img { width: 42px; height: 42px; object-fit: cover; border-radius: 2px; border: 1px solid var(--green-dim); }
+    .preview-imagem .remover-preview { margin-left: auto; background: transparent; border: none; color: var(--red); cursor: pointer; font-size: 0.9rem; padding: 2px 6px; }
+
+    .message .bubble img.imagem-chat {
+      max-width: 220px;
+      border-radius: 2px;
+      border: 1px solid var(--green-dim);
+      display: block;
+      margin-top: 8px;
+    }
 
     button { font-family: 'Orbitron', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; padding: 10px 18px; background: transparent; border: 1px solid var(--green-dim); color: var(--green); cursor: pointer; border-radius: 2px; transition: background 0.2s, box-shadow 0.2s; white-space: nowrap; }
     button:hover:not(:disabled) { background: rgba(0,255,65,0.08); box-shadow: 0 0 12px rgba(0,255,65,0.2); }
@@ -280,9 +315,18 @@
     <div class="chat-area hidden" id="chat"></div>
 
     <div class="input-area hidden" id="inputArea">
-      <span class="prompt-sign">›</span>
-      <textarea id="input" rows="1" placeholder="Digite sua pergunta..." maxlength="1000"></textarea>
-      <button id="btn" onclick="enviar()">ENVIAR</button>
+      <div class="preview-imagem hidden" id="previewImagem">
+        <img id="previewImg" src="" alt="preview" />
+        <span id="previewNome"></span>
+        <button class="remover-preview" onclick="removerImagemSelecionada()" title="Remover imagem">✕</button>
+      </div>
+      <div class="input-row">
+        <span class="prompt-sign">›</span>
+        <textarea id="input" rows="1" placeholder="Digite sua pergunta..." maxlength="1000"></textarea>
+        <input type="file" id="imagemUpload" accept="image/*" class="hidden" />
+        <button class="btn-anexo" id="btnAnexo" onclick="document.getElementById('imagemUpload').click()" title="Anexar imagem">📎</button>
+        <button id="btn" onclick="enviar()">ENVIAR</button>
+      </div>
     </div>
   </div>
 
@@ -308,13 +352,23 @@
     const nicknameInput = document.getElementById('nicknameInput');
     const modalRanking = document.getElementById('modalRanking');
     const rankingConteudo = document.getElementById('rankingConteudo');
+    const imagemUpload = document.getElementById('imagemUpload');
+    const btnAnexo = document.getElementById('btnAnexo');
+    const previewImagem = document.getElementById('previewImagem');
+    const previewImg = document.getElementById('previewImg');
+    const previewNome = document.getElementById('previewNome');
 
     // Substituir pela URL do Render depois se necessário (Ex: https://meu-app.onrender.com)
     const BASE_URL = 'http://localhost:3000';
     const API_URL = BASE_URL + '/api/chat';
+    const VISION_URL = BASE_URL + '/api/chat/vision';
+    const HISTORICO_URL = BASE_URL + '/api/chat/historico';
     const RANKING_URL = BASE_URL + '/api/ranking';
+    const LOGIN_URL = BASE_URL + '/api/auth/login';
 
     let nickname = null; // FASE 1: identidade do jogador
+    let authToken = null; // JWT retornado pelo /api/auth/login (usado na rota /vision)
+    let imagemSelecionada = null; // FASE 4: arquivo de imagem escolhido pelo usuário
 
     nicknameInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
@@ -323,12 +377,33 @@
       }
     });
 
-    function confirmarNickname() {
+    async function confirmarNickname() {
       const valor = nicknameInput.value.trim();
       if (!valor) {
         nicknameInput.focus();
         return;
       }
+
+      // Troca o nickname por um token JWT (necessário para a rota /vision)
+      try {
+        const res = await fetch(LOGIN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname: valor })
+        });
+        const data = await res.json();
+
+        if (!data.sucesso) {
+          alert(data.erro || 'Não foi possível entrar. Tente outro nickname.');
+          return;
+        }
+
+        authToken = data.token;
+      } catch (err) {
+        alert('Falha ao conectar ao servidor de login.');
+        return;
+      }
+
       nickname = valor;
 
       gate.classList.add('hidden');
@@ -337,8 +412,28 @@
       barraStatus.textContent = `POST → /api/chat // JOGADOR: ${nickname}`;
       status.textContent = 'AGUARDANDO INPUT...';
 
-      addMessage('bot', `Ah, mais um desafiante: **${nickname}**. Vamos ver se você aguenta o Cofre do Conhecimento. Faça sua pergunta ou peça um desafio.`, false, true);
+      carregarHistorico();
       input.focus();
+    }
+
+    // ===== Histórico Rico: busca no MongoDB e renderiza texto + imagens (Cloudinary) =====
+    async function carregarHistorico() {
+      try {
+        const res = await fetch(`${HISTORICO_URL}?nickname=${encodeURIComponent(nickname)}`);
+        const data = await res.json();
+
+        if (data.sucesso && data.mensagens && data.mensagens.length > 0) {
+          data.mensagens.forEach(msg => {
+            const texto = msg.parts?.map(p => p.text).join(' ') || '';
+            const who = msg.role === 'user' ? 'user' : 'bot';
+            addMessage(who, texto, false, who === 'bot', msg.imagemUrl || null);
+          });
+        } else {
+          addMessage('bot', `Ah, mais um desafiante: **${nickname}**. Vamos ver se você aguenta o Cofre do Conhecimento. Faça sua pergunta ou peça um desafio.`, false, true);
+        }
+      } catch (err) {
+        addMessage('bot', `Ah, mais um desafiante: **${nickname}**. Vamos ver se você aguenta o Cofre do Conhecimento. Faça sua pergunta ou peça um desafio.`, false, true);
+      }
     }
 
     input.addEventListener('keydown', e => {
@@ -353,7 +448,7 @@
       input.style.height = input.scrollHeight + 'px';
     });
 
-    function addMessage(who, text, isError = false, useMarkdown = false) {
+    function addMessage(who, text, isError = false, useMarkdown = false, imagemUrl = null) {
       const div = document.createElement('div');
       div.className = 'message ' + who + (isError ? ' error' : '');
 
@@ -365,9 +460,17 @@
       bubble.className = 'bubble';
 
       if (useMarkdown) {
-        bubble.innerHTML = marked.parse(text);
+        bubble.innerHTML = marked.parse(text || '');
       } else {
-        bubble.textContent = text;
+        bubble.textContent = text || '';
+      }
+
+      if (imagemUrl) {
+        const img = document.createElement('img');
+        img.className = 'imagem-chat';
+        img.src = imagemUrl;
+        img.alt = 'Imagem enviada';
+        bubble.appendChild(img);
       }
 
       div.appendChild(label);
@@ -375,6 +478,34 @@
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
       return div;
+    }
+
+    // ===== FASE 4: Preview da imagem selecionada =====
+    imagemUpload.addEventListener('change', () => {
+      const arquivo = imagemUpload.files[0];
+      if (!arquivo) return;
+
+      if (!arquivo.type.startsWith('image/')) {
+        alert('Apenas arquivos de imagem são aceitos.');
+        imagemUpload.value = '';
+        return;
+      }
+
+      imagemSelecionada = arquivo;
+      previewNome.textContent = arquivo.name;
+      previewImagem.classList.remove('hidden');
+      btnAnexo.classList.add('ativo');
+
+      const reader = new FileReader();
+      reader.onload = e => { previewImg.src = e.target.result; };
+      reader.readAsDataURL(arquivo);
+    });
+
+    function removerImagemSelecionada() {
+      imagemSelecionada = null;
+      imagemUpload.value = '';
+      previewImagem.classList.add('hidden');
+      btnAnexo.classList.remove('ativo');
     }
 
     function addTyping() {
@@ -415,23 +546,47 @@
 
     async function enviar() {
       const pergunta = input.value.trim();
-      if (!pergunta || !nickname) return;
+      if (!nickname) return;
+      if (!pergunta && !imagemSelecionada) return;
 
-      addMessage('user', pergunta);
+      // Guarda referência antes de limpar o estado da UI
+      const arquivoParaEnviar = imagemSelecionada;
+      const previewUrlLocal = arquivoParaEnviar ? previewImg.src : null;
+
+      addMessage('user', pergunta, false, false, previewUrlLocal);
       input.value = '';
       input.style.height = 'auto';
+      removerImagemSelecionada();
       btn.disabled = true;
       status.textContent = 'PROCESSANDO...';
       addTyping();
 
       try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pergunta, nickname })
-        });
+        let res, data;
 
-        const data = await res.json();
+        if (arquivoParaEnviar) {
+          // ===== Envio multimodal (imagem + texto) via FormData =====
+          const formData = new FormData();
+          formData.append('imagem', arquivoParaEnviar);
+          formData.append('pergunta', pergunta);
+          formData.append('nickname', nickname);
+
+          res = await fetch(VISION_URL, {
+            method: 'POST',
+            // Não definir Content-Type manualmente: o browser define o boundary do multipart sozinho
+            headers: { 'Authorization': `Bearer ${authToken}` },
+            body: formData
+          });
+        } else {
+          // ===== Envio de texto puro (fluxo original) =====
+          res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pergunta, nickname })
+          });
+        }
+
+        data = await res.json();
         removeTyping();
 
         if (data.sucesso) {

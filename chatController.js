@@ -183,16 +183,18 @@ exports.enviarMensagem = async (req, res) => {
 
 exports.enviarMensagemComImagem = async (req, res) => {
     try {
-        const { pergunta, nickname } = req.body;
+        const { pergunta } = req.body;
 
-        if (!nickname || !nickname.trim()) {
-            return res.status(400).json({ erro: "Identifique-se com um nickname antes de jogar." });
+        // req.jogador vem do middleware verificarToken (JWT), não do body:
+        // isso evita que alguém envie um nickname diferente do que autenticou.
+        if (!req.jogador) {
+            return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
         }
         if (!req.file) {
             return res.status(400).json({ erro: "Nenhuma imagem foi enviada." });
         }
 
-        const jogadorAtual = nickname.trim();
+        const jogadorAtual = req.jogador;
         const perguntaTexto = (pergunta && pergunta.trim()) || "Descreva o que você vê nesta imagem.";
 
         console.log(`🖼️ [${jogadorAtual}] Nova imagem recebida: "${perguntaTexto}"`);

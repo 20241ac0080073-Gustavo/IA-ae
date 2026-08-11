@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 // Importando Rotas
 const chatRoutes = require('./routes/chatRoutes');
 const rankingRoutes = require('./routes/rankingRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 app.use(express.json());
@@ -20,6 +21,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Acoplando as Rotas
 app.use('/api/chat', chatRoutes);
 app.use('/api/ranking', rankingRoutes);
+app.use('/api/auth', authRoutes);
 
 const PORTA = process.env.PORT || 3000;
 app.listen(PORTA, () => {
